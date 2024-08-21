@@ -1,8 +1,35 @@
-pub async fn read_battery(adc_pin33: AdcChannelDriver<'static, Gpio4, Atten11dB<_>>) {
-    let mut store: StorageHandler = StorageHandler::new();
+use std::borrow::BorrowMut;
+
+use crate::adc_to_volt;
+use crate::AdcChannelDriver;
+use crate::StorageHandler;
+use crate::STORAGE;
+use embassy_time::{Duration, Timer};
+use esp_idf_hal::adc::config::Config;
+use esp_idf_hal::adc::Atten11dB;
+use esp_idf_hal::adc::*;
+use esp_idf_hal::delay::FreeRtos;
+use esp_idf_hal::gpio::*;
+use log::*;
+use std::mem::drop;
+
+#[embassy_executor::task]
+pub async fn read_battery(mut adc1: ADC1, gpio4: Gpio4) {
+    let mut adc1: AdcDriver<ADC1> =
+        AdcDriver::new(adc1.borrow_mut(), &Config::new().calibration(true)).expect("msg");
+    let mut adc_pin33: esp_idf_hal::adc::AdcChannelDriver<'static, Gpio4, Atten11dB<_>> =
+        AdcChannelDriver::new(gpio4).expect("msg");
+    let adc_pin33_result = adc1.read(&mut adc_pin33).expect("msg");
+    *(STORAGE.lock().await) = Some(StorageHandler::new());
+    //let mut store: StorageHandler = StorageHandler::new();
     let mut lowest: u32 = adc_to_volt(adc_pin33_result) as u32;
     loop {
-        FreeRtos::delay_ms(1000);
+        Timer::after(Duration::from_secs(1)).await;
+        let mut mutex = STORAGE.lock().await;
+        let mut store = match mutex.as_mut() {
+            Some(s) => s,
+            _ => continue,
+        };
 
         let adc_pin33_result = adc1.read(&mut adc_pin33).expect("msg");
         //let towriet = u16_to_u8_array(adc_pin33_result);
@@ -26,5 +53,6 @@ pub async fn read_battery(adc_pin33: AdcChannelDriver<'static, Gpio4, Atten11dB<
         if store.has_datapoint() {
             store.add_value(lowest as u16);
         }
+        drop(store);
     }
 }

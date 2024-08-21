@@ -5,7 +5,7 @@ extern crate dotenv_codegen;
 
 mod global_setttings;
 mod network;
-//mod tasks;
+mod tasks;
 mod utils;
 
 use config::Resolution;
@@ -26,10 +26,11 @@ use esp_idf_hal::{delay::Ets, peripherals::Peripherals};
 use esp_idf_hal::{delay::FreeRtos, reset::WakeupReason};
 use esp_idf_svc::eventloop::{Background, EspSystemEventLoop};
 use esp_storage::FlashStorage;
+use network::webserver;
 
 //use std::sync::Mutex;
 use crate::network::init_network;
-//use crate::tasks::read_battery;
+use crate::tasks::read_battery;
 use embassy_sync::signal::Signal;
 use esp_idf_hal::adc::config::Config;
 use esp_idf_hal::adc::Atten11dB;
@@ -51,6 +52,7 @@ use crate::utils::storagehanler::StorageHandler;
 use crate::utils::watchdog::{patch_watchdog, watchdog_feeder};
 use esp_idf_sys::{self as _}; // If using the `binstart` feature of `esp-idf-sys`, always keep this module imported
 use log::*;
+use std::borrow::BorrowMut;
 use std::fmt::Write;
 use std::fs::read;
 use std::sync::atomic::Ordering;
@@ -59,6 +61,8 @@ use std::task::ready;
 
 static EXECUTOR: StaticCell<Executor> = StaticCell::new();
 static R: u16 = 100 / (110);
+type Store = Mutex<ThreadModeRawMutex, Option<StorageHandler>>;
+static STORAGE: Store = Mutex::new(None);
 
 fn main() {
     // It is necessary to call this function once. Otherwise some patches to the runtime
@@ -93,11 +97,11 @@ fn main() {
     let mut peripherals = Peripherals::take().expect("Failed to take peripherals");
 
     //let mut board = Board::init(peripherals);
-    let mut adc1: AdcDriver<ADC1> =
+    /*let mut adc1: AdcDriver<ADC1> =
         AdcDriver::new(&mut peripherals.adc1, &Config::new().calibration(true)).expect("msg");
 
     let mut adc_pin33: esp_idf_hal::adc::AdcChannelDriver<'static, Gpio4, Atten11dB<_>> =
-        AdcChannelDriver::new(peripherals.pins.gpio4).expect("msg");
+        AdcChannelDriver::new(peripherals.pins.gpio4).expect("msg");*/
     let nvs_default_partition =
         EspDefaultNvsPartition::take().expect("Cant receive nvs partition!");
     let wifi_modem: EspWifi = EspWifi::new(
@@ -133,14 +137,9 @@ fn main() {
     )
     .unwrap();
 
-    let adc_pin33_result = adc1.read(&mut adc_pin33).expect("msg");
+    //let adc_pin33_result = adc1.read(&mut adc_pin33).expect("msg");
 
-    patch_watchdog();
-    unsafe {
-        esp_task_wdt_reset();
-    }
-
-    FreeRtos::delay_ms(500);
+    /*FreeRtos::delay_ms(500);
     let mut store: StorageHandler = StorageHandler::new();
     let mut lowest: u32 = adc_to_volt(adc_pin33_result) as u32;
     loop {
@@ -168,17 +167,22 @@ fn main() {
         if store.has_datapoint() {
             store.add_value(lowest as u16);
         }
-    }
+    }*/
 
     //prepare_power_saving_mode(&mut modem);
     // modem.check_sim();
+    patch_watchdog();
+
     let executor = EXECUTOR.init(Executor::new());
     executor.run(|spawner| {
         spawner.spawn(watchdog_feeder()).ok();
         spawner
             .spawn(init_network(sysloop.clone(), spawner, wifi_modem))
             .ok();
-        //  spawner.spawn(read_battery(adc_pin33)).ok();
+        spawner
+            .spawn(read_battery(peripherals.adc1, peripherals.pins.gpio4))
+            .ok();
+        // spawner.spawn(webserver()).ok();
     });
 }
 
