@@ -191,4 +191,10 @@ impl StorageHandler {
         }
         return str;
     }
+
+    pub fn set_v(&mut self, vmin: u16, vmax: u16) {
+        self.pointer.vmin = vmin;
+        self.pointer.vmax = vmax;
+        self.update();
+    }
 }

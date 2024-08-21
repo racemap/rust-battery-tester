@@ -64,6 +64,7 @@ static R: u16 = 100 / (110);
 type Store = Mutex<ThreadModeRawMutex, Option<StorageHandler>>;
 static STORAGE: Store = Mutex::new(None);
 static METHOD_SIG: Signal<CriticalSectionRawMutex, RequestMethod> = Signal::new();
+static CONTENT: Signal<CriticalSectionRawMutex, String> = Signal::new();
 
 fn main() {
     // It is necessary to call this function once. Otherwise some patches to the runtime

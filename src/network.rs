@@ -1,14 +1,18 @@
 use embassy_executor::Spawner;
+use embassy_time::{Duration, Timer};
+use embedded_svc::http::client::Request;
+use embedded_svc::http::Headers;
 use embedded_svc::http::Method;
+use embedded_svc::io::Read;
 use embedded_svc::utils::asyncify::Asyncify;
 use embedded_svc::wifi::{AuthMethod, ClientConfiguration, Configuration};
 use esp_idf_svc::http::server::{Configuration as HttpServerConfig, EspHttpServer};
 use esp_idf_svc::wifi::WifiEvent;
-
-use embassy_time::{Duration, Timer};
 use esp_idf_svc::{eventloop::EspSystemEventLoop, wifi::EspWifi};
 use log::*;
 
+use crate::utils::storagehanler::RequestMethod;
+use crate::CONTENT;
 use crate::METHOD_SIG;
 use crate::STORAGE;
 
@@ -78,10 +82,35 @@ pub async fn webserver() {
     };
 
     httpserver.fn_handler("/delete", Method::Post, |request| {
-        METHOD_SIG.signal(1);
+        METHOD_SIG.signal(RequestMethod::RESET);
         let html = "Reseted!".to_string();
         let mut response = request.into_ok_response()?;
         // Return Requested Object (Index Page)
+        response.write(html.as_bytes())?;
+        Ok(())
+    });
+
+    httpserver.fn_handler("/change-v", Method::Post, |mut request| {
+        let len = request.content_len().unwrap_or(0) as usize;
+        println!("length {}", len);
+        if len > 500 {
+            request
+                .into_status_response(413)?
+                .write("Request too big".as_bytes())?;
+            return Ok(());
+        }
+        let mut buf: Vec<u8> = vec![0; len];
+        request.read_exact(&mut buf)?;
+        match String::from_utf8(buf) {
+            Ok(string) => {
+                CONTENT.signal(string);
+                METHOD_SIG.signal(RequestMethod::CHANGE_V);
+            }
+            Err(e) => println!("Invalid UTF-8 sequence: {}", e),
+        }
+        let html = "Reseted!".to_string();
+        let mut response = request.into_ok_response()?;
+
         response.write(html.as_bytes())?;
         Ok(())
     });
@@ -133,6 +162,14 @@ async fn index_html() -> String {
 </header>
 <main>
 <section class="py-5 text-center container">
+<div>
+    Current Battery level: {}
+</div>
+<form hx-post="/change-v" hx-include="this" hx-swap="none">
+    <input name="vmin" type="number" step="0.1" value="{}">
+    <input name="vmax" type="number" step="0.1" value="{}">
+    <button class="btn btn-success" type="submit">safe</button>
+</form>
 <button hx-post="/delete" class="btn btn-danger">Rest!</button>
 <div style="height: 50vh; width: 50%;">
         <canvas id="myChart{{ time }}"></canvas>
@@ -170,6 +207,9 @@ async fn index_html() -> String {
 </body>
 </html>
 "#,
+        s.get_battery_status(),
+        s.get_vmin(),
+        s.get_vmax(),
         s.get_labels(),
         s.get_values()
     )

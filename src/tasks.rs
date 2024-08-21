@@ -1,9 +1,11 @@
 use std::borrow::BorrowMut;
 
 use crate::adc_to_volt;
+use crate::utils::helper::{parse_v, read_request};
 use crate::utils::storagehanler::RequestMethod;
 use crate::AdcChannelDriver;
 use crate::StorageHandler;
+use crate::CONTENT;
 use crate::METHOD_SIG;
 use crate::STORAGE;
 use embassy_time::{Duration, Timer};
@@ -63,18 +65,47 @@ pub async fn read_battery(mut adc1: ADC1, gpio4: Gpio4) {
 pub async fn webserverparser() {
     loop {
         let a = METHOD_SIG.wait().await;
+        let mut mutex = STORAGE.lock().await;
+        let mut store = match mutex.as_mut() {
+            Some(s) => s,
+            _ => continue,
+        };
         match a {
             RequestMethod::RESET => {
-                let mut mutex = STORAGE.lock().await;
-                let mut store = match mutex.as_mut() {
-                    Some(s) => s,
+                store.reset();
+            }
+            RequestMethod::CHANGE_V => {
+                let content = CONTENT.wait().await;
+
+                let mut vmin = match read_request(&content, "vmin") {
+                    Ok(vmin) => vmin,
+                    _ => {
+                        print!("was not able to read the request");
+                        continue;
+                    }
+                };
+                let mut vmin = match parse_v(&mut vmin) {
+                    Ok(v) => v,
+                    _ => {
+                        print!("was not able to parse the request");
+                        continue;
+                    }
+                };
+
+                let mut vmax = match read_request(&content, "vmax") {
+                    Ok(vmax) => vmax,
                     _ => continue,
                 };
-                store.reset();
-                drop(store);
+                println!(" vmax{}", vmax);
+                let mut vmax = match parse_v(&mut vmax) {
+                    Ok(v) => v,
+                    _ => continue,
+                };
+
+                store.set_v(vmin, vmax);
             }
-            RequestMethod::CHANGE_V => {}
             _ => println!("not supported"),
         }
+        drop(store);
     }
 }
