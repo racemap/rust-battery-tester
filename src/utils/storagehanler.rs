@@ -1,5 +1,6 @@
 use ciborium::de::from_reader;
 use ciborium::ser::into_writer;
+use ciborium::value;
 use critical_section::acquire;
 use esp_idf_svc::nvs::*;
 use serde::{Deserialize, Serialize};
@@ -19,8 +20,13 @@ impl Data {
         let mut values: Vec<u16> = vec![];
         Self { time, values }
     }
+
     pub fn append_value(&mut self, value: u16) {
         self.values.push(value)
+    }
+
+    pub fn get_data(&self) -> &Vec<u16> {
+        return &self.values;
     }
 }
 
@@ -102,5 +108,18 @@ impl StorageHandler {
             self.was_set = false;
         }
         false
+    }
+
+    pub fn get_values(&self) -> &Vec<u16> {
+        return self.pointer.get_data();
+    }
+
+    pub fn get_labels(&self) -> Vec<u16> {
+        let mut out: Vec<u16> = vec![];
+        let len = self.get_values().len() as u8;
+        for i in 0..len {
+            out.push((self.pointer.time * i).into());
+        }
+        return out;
     }
 }

@@ -9,6 +9,8 @@ use embassy_time::{Duration, Timer};
 use esp_idf_svc::{eventloop::EspSystemEventLoop, wifi::EspWifi};
 use log::*;
 
+use crate::STORAGE;
+
 const SSID: &str = dotenv!("RUST_ESP32_STD_DEMO_WIFI_SSID");
 const PASS: &str = dotenv!("RUST_ESP32_STD_DEMO_WIFI_PASS");
 
@@ -74,21 +76,27 @@ pub async fn webserver() {
         }
     };
 
-    httpserver.fn_handler("/", Method::Get, |request| {
-        // Retrieve html String
-        let html = index_html();
-        // Respond with OK status
-        let mut response = request.into_ok_response()?;
-        // Return Requested Object (Index Page)
-        response.write(html.as_bytes())?;
-        Ok(())
-    });
     loop {
-        Timer::after(Duration::from_secs(1)).await;
+        let content = index_html().await;
+        httpserver.fn_handler("/", Method::Get, move |request| {
+            // Retrieve html String
+            let html = &content;
+            // Respond with OK status
+            let mut response = request.into_ok_response()?;
+            // Return Requested Object (Index Page)
+            response.write(html.as_bytes())?;
+            Ok(())
+        });
+        Timer::after(Duration::from_secs(1000)).await;
     }
 }
 
-fn index_html() -> String {
+async fn index_html() -> String {
+    let mutex = STORAGE.lock().await;
+    let s = match mutex.as_ref() {
+        Some(s) => s,
+        _ => return "".to_string(),
+    };
     format!(
         r#"
 <!DOCTYPE html>
@@ -115,10 +123,43 @@ fn index_html() -> String {
 </header>
 <main>
 <section class="py-5 text-center container">
+<div style="height: 50vh; width: 50%;">
+        <canvas id="myChart{{ time }}"></canvas>
+    <div>
+        Amps
+    </div>
+    </div>
+        <script>
+        const labels = {:?};
+
+        const data = {{ labels: labels,
+            datasets: [{{
+                label: 'Volts',
+                backgroundColor: 'rgb(255, 99, 132)',
+                borderColor: 'rgb(255, 99, 132)',
+                data: {:?},
+        }}]
+        }};
+
+        const config = {{
+            type: 'line',
+            data: data,
+            options: {{ maintainAspectRatio: false }}
+        }};
+
+        const myChart = new Chart(
+            document.getElementById('myChart{{ time }}'),
+            config
+        );
+
+    </script>
+    
 </section>
 </main>
 </body>
 </html>
-"#
+"#,
+        s.get_labels(),
+        s.get_values()
     )
 }
