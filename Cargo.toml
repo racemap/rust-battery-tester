@@ -1,0 +1,71 @@
+[package]
+name = "rust-sport-tracker"
+version = "0.1.0"
+authors = ["Karl <karl.wolffgang@racemap.com>"]
+edition = "2021"
+resolver = "2"
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+
+[profile.dev]
+debug = true  # Symbols are nice and they don't increase the size on Flash
+opt-level = 3
+
+[profile.dev.package.esp-storage]
+opt-level = 3
+
+[features]
+pio = ["esp-idf-sys/pio"]
+
+[dependencies]
+esp-idf-sys = { version = "0.33.1", features = ["binstart"] }
+esp-idf-hal = { version = "0.41.2", features = [
+    "edge-executor",
+    "embassy-sync",
+    "critical-section",
+] }
+esp-idf-svc = { version = "0.46.0", features = [
+    "nightly",
+    "experimental",
+    "embassy-time-driver",
+    "embassy-time-isr-queue",
+] }
+
+embedded-svc = { version = "0.25.1", features = ["nightly", "experimental"] }
+embedded-hal = { version = "1.0.0-alpha.10" }
+
+embassy-sync = { version = "0.1", features = ["std"] }
+embassy-executor = { version = "0.1.0", features = ["nightly"] }
+embassy-time = { version = "0.1" }
+
+heapless = "0.7"
+edge-executor = { version = "0.3" }
+
+static_cell = "1.0.0"
+critical-section = "1.1"
+log = { version = "0.4", features = [
+    "max_level_debug",
+    "release_max_level_debug",
+] }
+dotenv_codegen = "0.15.0"
+serde_json = { version = "1.0.91" }
+#serde = '1.0.152'
+ciborium = "0.1"
+serde = { version = "1.0", features = ["derive"] }
+ignore = "0.4.11"
+home = "0.5.5"
+cargo-platform = "0.1.5"
+esp-ota = "0.2.0"
+accelerometer = { version = "0.12.0", features = ["orientation"] }
+embedded-graphics = "0.7.1"
+embedded-storage = "=0.3.1"
+esp-storage = { version = "=0.3.0", features = ["esp32s3"] }
+
+
+[build-dependencies]
+embuild = "0.31.0"
+
+[package.metadata.espflash]
+partition_table = "partitions.csv"

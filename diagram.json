@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "author": "Sergio Gasquez Arcos",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "wokwi-esp32-devkit-v1",
+      "id": "esp",
+      "top": 0.59,
+      "left": 0.67,
+      "attrs": {
+        "builder": "rust-std-esp32"
+      }
+    },
+    {
+      "type": "chip-uart-example",
+      "id": "modem",
+      "top": -75.78,
+      "left": 196.8,
+      "attrs": {}
+    }
+  ],
+  "connections": [
+    ["esp:TX0", "$serialMonitor:RX", "", []],
+    ["esp:RX0", "$serialMonitor:TX", "", []],
+    ["esp:TX2", "modem:RX", "", []],
+    ["esp:RX2", "modem:TX", "", []]
+  ],
+  "serialMonitor": {
+    "display": "terminal"
+  },
+  "atModemEmulator": {
+    "display": "terminal"
+  }
+}

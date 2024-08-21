@@ -1,0 +1,25 @@
+const CONST_NAME: &str = "GIT_PROJECT_NAME";
+const CONST_HASH: &str = "GIT_HEAD_HASH";
+const CONST_TAG: &str = "GIT_TAG";
+const CONST_BRANCH: &str = "GIT_CURRENT_BRANCH";
+const CONST_DETAILED: &str = "GIT_DETAILED";
+const CONST_BUILD_DATE: &str = "GIT_BUILD_DATE";
+
+#[derive(Debug)]
+pub struct Firmware {
+    pub name: &'static str,
+    pub hash: &'static str,
+    pub tag: &'static str,
+    pub branch: &'static str,
+    pub detailed: &'static str,
+    pub build_date: &'static str,
+}
+
+pub const SPORT_TRACKER_FIRMWARE: Firmware = Firmware {
+    name: CONST_NAME,
+    hash: CONST_HASH,
+    tag: CONST_TAG,
+    branch: CONST_BRANCH,
+    detailed: CONST_DETAILED,
+    build_date: CONST_BUILD_DATE,
+};

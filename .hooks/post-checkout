@@ -1,0 +1,2 @@
+#!/bin/sh
+yarn ts-node scripts/handle-git-version.ts ./src templates/version.rs.template src/utils/version.rs

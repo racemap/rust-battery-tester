@@ -1,0 +1,5 @@
+{
+  "name": "AT modem Emulator",
+  "author": "Neppi",
+  "pins": ["RX", "TX", "GND", "VCC"]
+}
