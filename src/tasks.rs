@@ -3,6 +3,7 @@ use std::borrow::BorrowMut;
 use crate::adc_to_volt;
 use crate::AdcChannelDriver;
 use crate::StorageHandler;
+use crate::METHOD_SIG;
 use crate::STORAGE;
 use embassy_time::{Duration, Timer};
 use esp_idf_hal::adc::config::Config;
@@ -54,5 +55,24 @@ pub async fn read_battery(mut adc1: ADC1, gpio4: Gpio4) {
             store.add_value(lowest as u16);
         }
         drop(store);
+    }
+}
+
+#[embassy_executor::task]
+pub async fn webserverparser() {
+    loop {
+        let a = METHOD_SIG.wait().await;
+        match a {
+            1 => {
+                let mut mutex = STORAGE.lock().await;
+                let mut store = match mutex.as_mut() {
+                    Some(s) => s,
+                    _ => continue,
+                };
+                store.reset();
+                drop(store);
+            }
+            _ => println!("not supported"),
+        }
     }
 }

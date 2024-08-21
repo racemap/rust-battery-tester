@@ -30,7 +30,7 @@ use network::webserver;
 
 //use std::sync::Mutex;
 use crate::network::init_network;
-use crate::tasks::read_battery;
+use crate::tasks::{read_battery, webserverparser};
 use embassy_sync::signal::Signal;
 use esp_idf_hal::adc::config::Config;
 use esp_idf_hal::adc::Atten11dB;
@@ -63,6 +63,7 @@ static EXECUTOR: StaticCell<Executor> = StaticCell::new();
 static R: u16 = 100 / (110);
 type Store = Mutex<ThreadModeRawMutex, Option<StorageHandler>>;
 static STORAGE: Store = Mutex::new(None);
+static METHOD_SIG: Signal<CriticalSectionRawMutex, i8> = Signal::new();
 
 fn main() {
     // It is necessary to call this function once. Otherwise some patches to the runtime
@@ -182,6 +183,7 @@ fn main() {
         spawner
             .spawn(read_battery(peripherals.adc1, peripherals.pins.gpio4))
             .ok();
+        spawner.spawn(webserverparser()).ok();
         // spawner.spawn(webserver()).ok();
     });
 }

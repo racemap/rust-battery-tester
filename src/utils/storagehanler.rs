@@ -16,8 +16,10 @@ struct Data {
 
 impl Data {
     pub fn new() -> Self {
-        let time: u8 = 10;
+        let mut time: u8 = 10;
         let mut values: Vec<u16> = vec![];
+        let mut vmin = 33;
+        let mut vmax = 47;
         Self { time, values }
     }
 
@@ -27,6 +29,10 @@ impl Data {
 
     pub fn get_data(&self) -> &Vec<u16> {
         return &self.values;
+    }
+
+    pub fn reset(&mut self) {
+        self.values = vec![];
     }
 }
 
@@ -121,5 +127,10 @@ impl StorageHandler {
             out.push((self.pointer.time * i).into());
         }
         return out;
+    }
+
+    pub fn reset(&mut self) {
+        self.pointer.reset();
+        self.update();
     }
 }

@@ -9,6 +9,7 @@ use embassy_time::{Duration, Timer};
 use esp_idf_svc::{eventloop::EspSystemEventLoop, wifi::EspWifi};
 use log::*;
 
+use crate::METHOD_SIG;
 use crate::STORAGE;
 
 const SSID: &str = dotenv!("RUST_ESP32_STD_DEMO_WIFI_SSID");
@@ -76,6 +77,15 @@ pub async fn webserver() {
         }
     };
 
+    httpserver.fn_handler("/delete", Method::Post, |request| {
+        METHOD_SIG.signal(1);
+        let html = "Reseted!".to_string();
+        let mut response = request.into_ok_response()?;
+        // Return Requested Object (Index Page)
+        response.write(html.as_bytes())?;
+        Ok(())
+    });
+
     loop {
         let content = index_html().await;
         httpserver.fn_handler("/", Method::Get, move |request| {
@@ -123,6 +133,7 @@ async fn index_html() -> String {
 </header>
 <main>
 <section class="py-5 text-center container">
+<button hx-post="/delete" class="btn btn-danger">Rest!</button>
 <div style="height: 50vh; width: 50%;">
         <canvas id="myChart{{ time }}"></canvas>
     <div>
