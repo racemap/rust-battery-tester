@@ -1,6 +1,7 @@
 use std::borrow::BorrowMut;
 
 use crate::adc_to_volt;
+use crate::utils::storagehanler::RequestMethod;
 use crate::AdcChannelDriver;
 use crate::StorageHandler;
 use crate::METHOD_SIG;
@@ -63,7 +64,7 @@ pub async fn webserverparser() {
     loop {
         let a = METHOD_SIG.wait().await;
         match a {
-            1 => {
+            RequestMethod::RESET => {
                 let mut mutex = STORAGE.lock().await;
                 let mut store = match mutex.as_mut() {
                     Some(s) => s,
@@ -72,6 +73,7 @@ pub async fn webserverparser() {
                 store.reset();
                 drop(store);
             }
+            RequestMethod::CHANGE_V => {}
             _ => println!("not supported"),
         }
     }

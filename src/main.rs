@@ -48,7 +48,7 @@ use static_cell::StaticCell;
 
 use crate::utils::board::FLAG;
 use crate::utils::board::{Board, BoardPeripherals};
-use crate::utils::storagehanler::StorageHandler;
+use crate::utils::storagehanler::{RequestMethod, StorageHandler};
 use crate::utils::watchdog::{patch_watchdog, watchdog_feeder};
 use esp_idf_sys::{self as _}; // If using the `binstart` feature of `esp-idf-sys`, always keep this module imported
 use log::*;
@@ -63,7 +63,7 @@ static EXECUTOR: StaticCell<Executor> = StaticCell::new();
 static R: u16 = 100 / (110);
 type Store = Mutex<ThreadModeRawMutex, Option<StorageHandler>>;
 static STORAGE: Store = Mutex::new(None);
-static METHOD_SIG: Signal<CriticalSectionRawMutex, i8> = Signal::new();
+static METHOD_SIG: Signal<CriticalSectionRawMutex, RequestMethod> = Signal::new();
 
 fn main() {
     // It is necessary to call this function once. Otherwise some patches to the runtime
