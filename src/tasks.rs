@@ -96,13 +96,28 @@ pub async fn webserverparser() {
                     Ok(vmax) => vmax,
                     _ => continue,
                 };
-                println!(" vmax{}", vmax);
                 let mut vmax = match parse_v(&mut vmax) {
                     Ok(v) => v,
                     _ => continue,
                 };
 
                 store.set_v(vmin, vmax);
+            }
+            RequestMethod::CHANGE_T => {
+                let content = CONTENT.wait().await;
+
+                let mut time = match read_request(&content, "time") {
+                    Ok(vmin) => vmin,
+                    _ => {
+                        print!("was not able to read the request");
+                        continue;
+                    }
+                };
+                println!("{} time", time);
+                match time.parse::<u8>() {
+                    Ok(t) => store.set_time(t),
+                    _ => continue,
+                }
             }
             _ => println!("not supported"),
         }

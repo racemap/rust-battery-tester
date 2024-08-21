@@ -20,7 +20,7 @@ pub enum RequestMethod {
 
 #[derive(Serialize, Deserialize, Debug)]
 struct Data {
-    time: u8,
+    pub time: u8,
     values: Vec<u16>,
     pub vmin: u16,
     pub vmax: u16,
@@ -195,6 +195,15 @@ impl StorageHandler {
     pub fn set_v(&mut self, vmin: u16, vmax: u16) {
         self.pointer.vmin = vmin;
         self.pointer.vmax = vmax;
+        self.update();
+    }
+
+    pub fn get_time(&self) -> u8 {
+        self.pointer.time
+    }
+
+    pub fn set_time(&mut self, time: u8) {
+        self.pointer.time = time;
         self.update();
     }
 }

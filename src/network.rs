@@ -115,6 +115,31 @@ pub async fn webserver() {
         Ok(())
     });
 
+    httpserver.fn_handler("/change-time", Method::Post, |mut request| {
+        let len = request.content_len().unwrap_or(0) as usize;
+        println!("length {}", len);
+        if len > 500 {
+            request
+                .into_status_response(413)?
+                .write("Request too big".as_bytes())?;
+            return Ok(());
+        }
+        let mut buf: Vec<u8> = vec![0; len];
+        request.read_exact(&mut buf)?;
+        match String::from_utf8(buf) {
+            Ok(string) => {
+                CONTENT.signal(string);
+                METHOD_SIG.signal(RequestMethod::CHANGE_T);
+            }
+            Err(e) => println!("Invalid UTF-8 sequence: {}", e),
+        }
+        let html = "Reseted!".to_string();
+        let mut response = request.into_ok_response()?;
+
+        response.write(html.as_bytes())?;
+        Ok(())
+    });
+
     loop {
         let content = index_html().await;
         httpserver.fn_handler("/", Method::Get, move |request| {
@@ -166,9 +191,14 @@ async fn index_html() -> String {
     Current Battery level: {}
 </div>
 <form hx-post="/change-v" hx-include="this" hx-swap="none">
-    <input name="vmin" type="number" step="0.1" value="{}">
-    <input name="vmax" type="number" step="0.1" value="{}">
+    <input name="vmin" type="number" step="0.1" min="1.0" value="{}">
+    <input name="vmax" type="number" step="0.1" min="1.0" value="{}">
     <button class="btn btn-success" type="submit">safe</button>
+</form>
+<form hx-post="/change-time" hx-include="this" hx-swap="none">
+        <label for="time">time the mesurements are taken in min:</label> 
+        <input id="time" name="time" type="number" min="1" max="255" value="{}">
+        <button class="btn btn-success" type="submit">safe</button>
 </form>
 <button hx-post="/delete" class="btn btn-danger">Rest!</button>
 <div style="height: 50vh; width: 50%;">
@@ -210,6 +240,7 @@ async fn index_html() -> String {
         s.get_battery_status(),
         s.get_vmin(),
         s.get_vmax(),
+        s.get_time(),
         s.get_labels(),
         s.get_values()
     )
