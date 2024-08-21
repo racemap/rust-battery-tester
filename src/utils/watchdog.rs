@@ -17,10 +17,10 @@ pub fn patch_watchdog() {
         Err(err) => println!("Failed to remove idle task from watchdog: {err:?}"),
         Ok(_) => println!("Remove idle task from watchdog!"),
     };
-    /*match esp!(unsafe { esp_task_wdt_add(current_task) }) {
+    match esp!(unsafe { esp_task_wdt_add(current_task) }) {
         Err(err) => println!("Failed to add current task to watchdog: {err:?}"),
         Ok(_) => println!("Added current task to watchdog!"),
-    };*/
+    };
 }
 
 pub fn feed_watchdog() {
