@@ -203,8 +203,9 @@ async fn index_html() -> String {
 <button hx-post="/delete" class="btn btn-danger">Rest!</button>
 <div style="height: 50vh; width: 50%;">
         <canvas id="myChart{{ time }}"></canvas>
+        <canvas id="proc"></canvas>
     <div>
-        Amps
+        Amperhours (mAh) = {}
     </div>
     </div>
         <script>
@@ -212,7 +213,15 @@ async fn index_html() -> String {
 
         const data = {{ labels: labels,
             datasets: [{{
-                label: 'Volts',
+                label: 'milli Volts',
+                backgroundColor: 'rgb(255, 99, 132)',
+                borderColor: 'rgb(255, 99, 132)',
+                data: {:?},
+        }}]
+        }};
+        const data2 = {{ labels: labels,
+            datasets: [{{
+                label: 'Procent',
                 backgroundColor: 'rgb(255, 99, 132)',
                 borderColor: 'rgb(255, 99, 132)',
                 data: {:?},
@@ -225,11 +234,20 @@ async fn index_html() -> String {
             options: {{ maintainAspectRatio: false }}
         }};
 
+        const config2 = {{
+            type: 'line',
+            data: data2,
+            options: {{ maintainAspectRatio: false }}
+        }};
+
         const myChart = new Chart(
             document.getElementById('myChart{{ time }}'),
             config
         );
-
+        const myChart2 = new Chart(
+            document.getElementById('proc'),
+            config2
+        );
     </script>
     
 </section>
@@ -241,7 +259,9 @@ async fn index_html() -> String {
         s.get_vmin(),
         s.get_vmax(),
         s.get_time(),
+        s.amph(),
         s.get_labels(),
-        s.get_values()
+        s.get_values(),
+        s.get_proc()
     )
 }
