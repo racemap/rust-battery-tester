@@ -55,8 +55,14 @@ impl Data {
     pub fn get_battery(&self, volts: &u16) -> u16 {
         match volts {
             0..=100 => return 0,
-            e => return (e - self.vmin) * 100 / (self.vmax - self.vmin),
+            e => {
+                if (e - self.vmin * 100) < 2000 {
+                    return (e - self.vmin * 100) / (self.vmax - self.vmin);
+                }
+                return 0;
+            }
         }
+        0
     }
 }
 
@@ -205,5 +211,22 @@ impl StorageHandler {
     pub fn set_time(&mut self, time: u8) {
         self.pointer.time = time;
         self.update();
+    }
+
+    pub fn get_proc(&self) -> Vec<u16> {
+        let mut pro: Vec<u16> = vec![];
+        for i in self.pointer.get_data() {
+            let ap = self.pointer.get_battery(i);
+            pro.push(ap);
+        }
+        pro
+    }
+
+    pub fn amph(&self) -> u16 {
+        let mut amph = 0;
+        for i in self.pointer.get_data() {
+            amph += i * 1000 / 560 * self.pointer.time as u16 / 60;
+        }
+        amph
     }
 }
