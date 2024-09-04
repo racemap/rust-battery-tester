@@ -119,8 +119,10 @@ impl StorageHandler {
     }
 
     pub fn add_value(&mut self, value: u16) {
-        self.pointer.append_value(value);
-        self.update();
+        if self.pointer.get_battery(&value) <= 100 {
+            self.pointer.append_value(value);
+            self.update();
+        }
     }
 
     pub fn rest_store(&mut self) {
