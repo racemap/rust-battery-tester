@@ -205,7 +205,7 @@ fn volt_to_adc(v: u16) -> u16 {
 }
 
 fn adc_to_volt(adc: u16) -> u16 {
-    let mut out: u16 = adc * 17;
+    let mut out: u16 = adc * 14 + adc / 2;
     print!("{}", out);
     return out;
 }
